@@ -3,27 +3,38 @@
 
 ## Loading and preprocessing the data
 
-We begin by reading the supplied activity data from a file in CSV format and then extracting a subset containing only the complete cases for the initial calculations.  Later the missing values will be interpolated with imputed values but for now we'll ignore the missing values.
+We begin by reading the supplied activity data from a file in CSV format into a data frame.  We'll keep the missing values but ignore them in the calculations for the first few parts of the problem.
 
 
 ```r
 activity <- read.csv("data/activity.csv")
-activity.nona <- activity[complete.cases(activity),]
 ```
 
 ## What is mean total number of steps taken per day?
 
 The total steps per day is calculated as follows:
 
+* first, splitting the input data using the date as a factor, producing a list of the intervals recorded for each day
+* next, applying the sum function to each day's list of steps in the available intervals.
+
 ```r
-steps.by.day <- split(activity.nona, activity.nona$date)
-total.steps.by.day <- lapply(steps.by.day, function(x) sum(x[["steps"]]))
+steps.by.day <- split(activity, activity$date)
+total.steps.by.day <- sapply(steps.by.day, function(x) sum(x[["steps"]], na.rm = TRUE))
+```
+A first look at the data is given by a histogram of steps taken each day:
+
+
+```r
+hist(total.steps.by.day, breaks=20, main="Histogram of Steps Taken Each Day",
+     xlab="Steps Taken in a Given Day", ylab="Number of Days with This Many Steps")
 ```
 
-The mean steps per day is calculated as follows:
+![](PA1_template_files/figure-html/unnamed-chunk-3-1.png) 
+
+The mean steps per day is calculated from the total steps per day:
 
 ```r
-mean.steps.per.day <- mean(unlist(total.steps.by.day))
+mean.steps.per.day <- mean(total.steps.by.day)
 mean.steps.per.day
 ```
 
@@ -34,7 +45,7 @@ mean.steps.per.day
 The median steps per day is calculated as follows:
 
 ```r
-median.steps.per.day <- median(unlist(total.steps.by.day))
+median.steps.per.day <- median(total.steps.by.day)
 median.steps.per.day
 ```
 
@@ -44,21 +55,107 @@ median.steps.per.day
 
 ## What is the average daily activity pattern?
 
+For the average daily activity pattern, we take a different view of the data.
+Unlike the calculation for the mean total steps per day, this time we split the data using the interval, so we end up wth the data grouped by the time of day across all days.  Then we compute and plot the mean number of steps taken at each given time of day across all days.
 
 
 ```r
-steps.by.interval <- split(activity.nona, activity.nona$interval)
-mean.steps.by.interval <- lapply(steps.by.interval, function(x) mean(x[["steps"]]))
+steps.by.interval <- split(activity, activity$interval)
+mean.steps.by.interval <- lapply(steps.by.interval, function(x) mean(x[["steps"]], na.rm = TRUE))
 plot(names(mean.steps.by.interval), mean.steps.by.interval, type="l",
      xlab="Time-of-Day Interval", ylab="Steps Averaged Across Days")
 ```
 
-![](PA1_template_files/figure-html/unnamed-chunk-5-1.png) 
+![](PA1_template_files/figure-html/unnamed-chunk-6-1.png) 
+
+The interval of the day during which the maximum average number of steps is taken is
+
+```r
+max.steps.interval <- which.max(mean.steps.by.interval)
+names(max.steps.interval)
+```
+
+```
+## [1] "835"
+```
+for which the number of steps taken is
+
+```r
+mean.steps.by.interval[max.steps.interval]
+```
+
+```
+## $`835`
+## [1] 206.1698
+```
 
 ## Imputing missing values
 
+Note there are a number of missing values in the original data.  The number of intervals in the complete data set which have missing values is:
+
+```r
+incomplete.activity <- !complete.cases(activity)
+sum(incomplete.activity)
+```
+
+```
+## [1] 2304
+```
+
+To adjust for the possible biases introduced by missing values, we'll adjust the data set by imputing values in cases where the original values are missing.  The strategy for this is to apply the value for the mean for the corresponding interval.
 
 
+```r
+library(dplyr)
+```
+
+```
+## 
+## Attaching package: 'dplyr'
+## 
+## The following object is masked from 'package:stats':
+## 
+##     filter
+## 
+## The following objects are masked from 'package:base':
+## 
+##     intersect, setdiff, setequal, union
+```
+
+```r
+adjusted.activity <- mutate(activity, imputed <- ifelse(incomplete.activity,
+                                                        mean.steps.by.interval[interval],
+                                                        steps))
+```
+
+Redoing the initial set of calculations using the imputed values, we look at the results:
+
+```r
+adjusted.steps.by.day <- split(adjusted.activity, activity$date)
+adjusted.total.steps.by.day <- sapply(adjusted.steps.by.day, function(x) sum(x[["imputed"]]))
+hist(adjusted.total.steps.by.day, breaks=20, main="Histogram of Adjusted Steps Taken Each Day",
+     xlab="Adjusted Steps Taken in a Given Day", ylab="Number of Days (Adjusted) with This Many Steps")
+```
+
+![](PA1_template_files/figure-html/unnamed-chunk-11-1.png) 
+
+```r
+adjusted.mean.steps.per.day <- mean(adjusted.total.steps.by.day)
+adjusted.mean.steps.per.day
+```
+
+```
+## [1] 0
+```
+
+```r
+adjusted.median.steps.per.day <- median(adjusted.total.steps.by.day)
+adjusted.median.steps.per.day
+```
+
+```
+## [1] 0
+```
 
 ## Are there differences in activity patterns between weekdays and weekends?
 
