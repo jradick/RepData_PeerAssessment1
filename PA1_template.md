@@ -231,7 +231,10 @@ adjusted.median.steps.per.day
 ## [1] 10766.19
 ```
 
+As one can see from the plot, the effect of the adjustment is to magnify the central peak in the data and reduce the other values.  In other words, the mean behavior is emphasized and the non-mean behavior is de-emphasized.
+
 ## 6. Comparison of Average Daily Activity Pattern between Weekdays and Weekends
 
+_I haven't figured out how to split the data into weekdays and weekends yet._
 
 
